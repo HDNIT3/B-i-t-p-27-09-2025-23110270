@@ -27,11 +27,6 @@ public class User {
     private String phone;
 
     // Quan hệ nhiều-nhiều với Category
-    @ManyToMany(mappedBy = "users")
+    @ManyToMany(mappedBy = "users",fetch = FetchType.EAGER)
     private Set<Category> categories = new HashSet<>();
-
-    // Quan hệ 1-nhiều với Product (người đăng sản phẩm)
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private Set<Product> products = new HashSet<>();
 }
-

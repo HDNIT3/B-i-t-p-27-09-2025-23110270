@@ -1,21 +1,18 @@
-# -----------------------------
-# Định nghĩa các kiểu dữ liệu
-# -----------------------------
 type User {
     id: ID!
     fullname: String
     email: String
     password: String
     phone: String
-    categories: [Category]
-    products: [Product]
+    categories: [Category]   # nhiều-nhiều với Category
 }
 
 type Category {
     id: ID!
     name: String
     images: String
-    users: [User]
+    users: [User]            # nhiều-nhiều với User
+    products: [Product]      # 1-nhiều với Product
 }
 
 type Product {
@@ -24,8 +21,7 @@ type Product {
     quantity: Int
     desc: String
     price: Float
-    user: User
-    category: Category
+    category: Category       # nhiều Product thuộc 1 Category
 }
 
 # -----------------------------
@@ -36,11 +32,13 @@ input UserInput {
     email: String
     password: String
     phone: String
+    categoryIds: [ID]        # liên kết nhiều Category
 }
 
 input CategoryInput {
     name: String
     images: String
+    userIds: [ID]            # liên kết nhiều User
 }
 
 input ProductInput {
@@ -48,8 +46,7 @@ input ProductInput {
     quantity: Int
     desc: String
     price: Float
-    userId: ID
-    categoryId: ID
+    categoryId: ID           # mỗi Product thuộc 1 Category
 }
 
 # -----------------------------
@@ -64,6 +61,8 @@ type Query {
 
     getAllProducts: [Product]
     getProductById(id: ID!): Product
+    
+    getAllProductsSortedByPrice: [Product]
 }
 
 # -----------------------------

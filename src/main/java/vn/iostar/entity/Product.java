@@ -26,14 +26,8 @@ public class Product {
 
     private Double price;
 
-    // Quan hệ nhiều-1 với User
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-
     // Quan hệ nhiều-1 với Category
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
     private Category category;
 }
-

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Quản lý Category</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+th { background: #f2f2f2; }
+input { margin: 4px; }
+</style>
+</head>
+<body>
+<h1>Quản lý Category</h1>
+
+<h3>Tạo / Cập nhật Category</h3>
+<form id="categoryForm">
+<input type="hidden" id="categoryId">
+<input type="text" id="name" placeholder="Name" required>
+<input type="text" id="images" placeholder="Images">
+<input type="text" id="userIds" placeholder="User IDs (1,2)">
+<button type="submit">Lưu</button>
+<button type="button" onclick="resetForm()">Hủy</button>
+</form>
+
+<button onclick="loadCategories()">Tải lại</button>
+<div id="output"></div>
+
+<script>
+function resetForm(){
+  $("#categoryForm")[0].reset();
+  $("#categoryId").val("");
+}
+
+function loadCategories(){
+  $("#output").text("Đang tải...");
+  $.ajax({
+    url:"http://localhost:8080/apis/graphql",
+    method:"POST",
+    contentType:"application/json",
+    data: JSON.stringify({query:`query{getAllCategories{id name users{id} products{id}}}`}),
+    success:function(res){
+      if(res.errors){ $("#output").text("Lỗi: "+JSON.stringify(res.errors)); return; }
+      const cats=res.data.getAllCategories;
+      if(!cats || cats.length===0){ $("#output").text("Chưa có Category"); return; }
+      let html="<table><tr><th>ID</th><th>Name</th><th>Users</th><th>Products</th><th>Action</th></tr>";
+      cats.forEach(c=>{
+        html+=`<tr>
+          <td>${c.id}</td>
+          <td>${c.name}</td>
+          <td>${c.users.map(u=>u.id).join(",")}</td>
+          <td>${c.products.map(p=>p.id).join(",")}</td>
+          <td>
+            <button onclick="editCategory(${c.id},'${c.name}','${c.images}','')">Sửa</button>
+            <button onclick="deleteCategory(${c.id})">Xóa</button>
+          </td>
+        </tr>`;
+      });
+      html+="</table>";
+      $("#output").html(html);
+    }
+  });
+}
+
+function editCategory(id,name,images,userIds){
+  $("#categoryId").val(id);
+  $("#name").val(name);
+  $("#images").val(images);
+  $("#userIds").val(userIds);
+}
+
+function deleteCategory(id){
+  if(!confirm("Xóa Category?")) return;
+  $.ajax({
+    url:"http://localhost:8080/apis/graphql",
+    method:"POST",
+    contentType:"application/json",
+    data: JSON.stringify({query:`mutation($id:ID!){deleteCategory(id:$id)}`,variables:{id}}),
+    success:function(){ loadCategories(); }
+  });
+}
+
+$("#categoryForm").submit(function(e){
+  e.preventDefault();
+  const id=$("#categoryId").val();
+  const name=$("#name").val();
+  const images=$("#images").val();
+  const userIds=$("#userIds").val().split(",").map(x=>x.trim()).filter(x=>x);
+
+  const query=id ?
+    `mutation($id:ID!, $category:CategoryInput!){updateCategory(id:$id, category:$category){id name}}` :
+    `mutation($category:CategoryInput!){createCategory(category:$category){id name}}`;
+
+  const variables=id ? {id, category:{name,images,userIds}} : {category:{name,images,userIds}};
+
+  $.ajax({url:"http://localhost:8080/apis/graphql",method:"POST",contentType:"application/json",data:JSON.stringify({query,variables}),success:function(){resetForm();loadCategories();}});
+});
+
+$(document).ready(loadCategories);
+</script>
+</body>
+</html>

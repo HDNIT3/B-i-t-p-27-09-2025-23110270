@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản lý User</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f2f2f2; }
+    input { margin: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Quản lý User</h1>
+
+  <h3>Tạo / Cập nhật User</h3>
+  <form id="userForm">
+    <input type="hidden" id="userId">
+    <input type="text" id="fullname" placeholder="Fullname" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="text" id="phone" placeholder="Phone">
+    <input type="password" id="password" placeholder="Password">
+    <input type="text" id="categoryIds" placeholder="Category IDs (1,2,3)">
+    <button type="submit">Lưu</button>
+    <button type="button" onclick="resetForm()">Hủy</button>
+  </form>
+
+  <button onclick="loadUsers()">Tải lại</button>
+  <div id="output"></div>
+
+<script>
+function resetForm() {
+  $("#userForm")[0].reset();
+  $("#userId").val("");
+}
+
+function loadUsers() {
+  $("#output").text("Đang tải...");
+  $.ajax({
+    url: "http://localhost:8080/apis/graphql",
+    method: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({ query: `query { getAllUsers { id fullname email phone categories { id name } } }` }),
+    success: function(res) {
+      if(res.errors) { $("#output").text("Lỗi: " + JSON.stringify(res.errors)); return; }
+      const users = res.data.getAllUsers;
+      if(!users || users.length===0) { $("#output").text("Chưa có User."); return; }
+      let html = "<table><tr><th>ID</th><th>Fullname</th><th>Email</th><th>Phone</th><th>Categories</th><th>Action</th></tr>";
+      users.forEach(u=>{
+        html += `<tr>
+          <td>${u.id}</td>
+          <td>${u.fullname}</td>
+          <td>${u.email}</td>
+          <td>${u.phone||""}</td>
+          <td>${u.categories.map(c=>c.id).join(",")}</td>
+          <td>
+            <button onclick="editUser(${u.id},'${u.fullname}','${u.email}','${u.phone||""}','')">Sửa</button>
+            <button onclick="deleteUser(${u.id})">Xóa</button>
+          </td>
+        </tr>`;
+      });
+      html += "</table>";
+      $("#output").html(html);
+    }
+  });
+}
+
+function editUser(id, fullname, email, phone, categoryIds) {
+  $("#userId").val(id);
+  $("#fullname").val(fullname);
+  $("#email").val(email);
+  $("#phone").val(phone);
+  $("#categoryIds").val(categoryIds);
+}
+
+function deleteUser(id) {
+  if(!confirm("Xóa User?")) return;
+  $.ajax({
+    url:"http://localhost:8080/apis/graphql",
+    method:"POST",
+    contentType:"application/json",
+    data: JSON.stringify({
+      query: `mutation($id: ID!){ deleteUser(id:$id) }`,
+      variables:{id}
+    }),
+    success:function(res){ loadUsers(); }
+  });
+}
+
+$("#userForm").submit(function(e){
+  e.preventDefault();
+  const id = $("#userId").val();
+  const fullname = $("#fullname").val();
+  const email = $("#email").val();
+  const phone = $("#phone").val();
+  const password = $("#password").val();
+  const categoryIds = $("#categoryIds").val().split(",").map(x=>x.trim()).filter(x=>x);
+
+  const query = id ? 
+    `mutation($id: ID!, $user: UserInput!){ updateUser(id:$id, user:$user){ id fullname } }` :
+    `mutation($user: UserInput!){ createUser(user:$user){ id fullname } }`;
+
+  const variables = id ? {id, user:{fullname,email,phone,password,categoryIds}} : {user:{fullname,email,phone,password,categoryIds}};
+
+  $.ajax({
+    url:"http://localhost:8080/apis/graphql",
+    method:"POST",
+    contentType:"application/json",
+    data: JSON.stringify({query, variables}),
+    success:function(){ resetForm(); loadUsers(); }
+  });
+});
+
+// Tải User tự động
+$(document).ready(loadUsers);
+</script>
+</body>
+</html>
