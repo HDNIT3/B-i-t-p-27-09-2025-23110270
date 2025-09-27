@@ -2,15 +2,17 @@ package vn.iostar.service.impl;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import vn.iostar.entity.Product;
 import vn.iostar.repository.ProductRepository;
+import vn.iostar.service.CategoryService;
 import vn.iostar.service.ProductService;
 
 @Service
 public class ProductServiceImpl implements ProductService {
-
+	
     private final ProductRepository productRepository;
 
     public ProductServiceImpl(ProductRepository productRepository) {
@@ -21,7 +23,9 @@ public class ProductServiceImpl implements ProductService {
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
-
+    
+  
+    
     @Override
     public Product getProductById(Long id) {
         return productRepository.findById(id).orElse(null);
@@ -53,4 +57,16 @@ public class ProductServiceImpl implements ProductService {
         }
         return false;
     }
+    
+    @Override
+    public List<Product> getAllProductsSortedByPrice() {
+        return productRepository.findAllByOrderByPriceAsc();
+    }
+    @Autowired
+    CategoryService categoryService;
+	@Override
+	public List<Product> getProductsByCategory(Long categoryId) {
+		// TODO Auto-generated method stub
+		return productRepository.findByCategory(categoryService.getCategoryById(categoryId));
+	}
 }

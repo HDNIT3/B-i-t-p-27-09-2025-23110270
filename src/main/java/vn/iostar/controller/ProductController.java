@@ -42,4 +42,14 @@ public class ProductController {
     public boolean deleteProduct(@Argument Long id) {
         return productService.deleteProduct(id);
     }
+    
+    @QueryMapping
+    public List<Product> getAllProductsSortedByPrice() {
+        return productService.getAllProductsSortedByPrice();
+    }
+
+    @QueryMapping
+    public List<Product> getProductsByCategory(@Argument Long categoryId) {
+        return productService.getProductsByCategory(categoryId);
+    }
 }
